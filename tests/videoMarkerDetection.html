@@ -285,6 +285,10 @@ function init() {
 
   putCode('ws_instantiate_code_area',
           document.getElementById('ws_instantiate_code').text.trim());
+
+  loadTextFile('collisionDetection.wat', function(text) {
+    putCode('wat_code_area', text.trim());
+  });
 }
 
 function loadTextFile(url, callback) {
@@ -363,6 +367,10 @@ function switchDisplay(div) {
   <div>
     <p onclick="switchDisplay(this.parentNode)">+ WebAssembly Instantiation code</p>
     <p><textarea id="ws_instantiate_code_area" readonly style="display:none"></textarea></p>
+  </div>
+  <div>
+    <p onclick="switchDisplay(this.parentNode)">+ WebAssembly Text code</p>
+    <p><textarea id="wat_code_area" readonly style="display:none"></textarea></p>
   </div>
 </body>
 </html>
