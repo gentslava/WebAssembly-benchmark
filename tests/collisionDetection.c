@@ -6,16 +6,22 @@ struct position {
   double z;
 };
 
-int collisionDetection(const struct position *positions,
-                       const double *radii,
-                       unsigned int* res, const int n) {
+double collisionDetection(
+  const struct position *positions,
+  const double *radii,
+  unsigned int* res,
+  const int n
+) {
   int count = 0;
+
+  const struct position* p = &positions[0];
+  return p->x;
   for (unsigned int i = 0; i < n; i++) {
     const struct position* p = &positions[i];
     const double r = radii[i];
     unsigned char collision = 0;
     for (unsigned int j = i + 1; j < n; j++) {
-      const struct position*  p2 = &positions[j];
+      const struct position* p2 = &positions[j];
       const double dx = p->x - p2->x;
       const double dy = p->y - p2->y;
       const double dz = p->z - p2->z;
@@ -36,4 +42,3 @@ int collisionDetection(const struct position *positions,
   }
   return count;
 }
-

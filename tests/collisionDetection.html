@@ -57,28 +57,48 @@ function jsCollisionDetection(positions, radii, res, n) {
     let collisionDetectionInstance = null;
   </script>
   <script id="ws_instantiate_code">
-    function initWASMEnvironment(onFinishCb) {
+    function initWASMEnvironment(onEnvReady) {
       const memoryBlock = new WebAssembly.Memory({
         initial: numPages,
         maximum: numPages
       });
 
-      fetch("collisionDetection.wasm").then(result => {
-        const binary = result.arrayBuffer();
-        binary.then(receivedData => {
-          const rawReceivedBytes = new Uint8Array(receivedData);
-          WebAssembly.instantiate(rawReceivedBytes, {
-            "env": {
-              memory: memoryBlock
-            }
-          }).then(wasmModule => {
-            collisionDetectionModule = wasmModule.module;
-            collisionDetectionInstance = wasmModule.instance;
+      fetch("collisionDetection.wasm")
+        .then((response) => response.arrayBuffer())
+        .then((bytes) => WebAssembly.instantiate(
+          bytes,
+          {
+            env: { memory: memoryBlock }
+          }
+        ))
+        .then((wasmModule) => {
+          console.log(wasmModule);
+          collisionDetectionModule = wasmModule.module;
+          collisionDetectionInstance = wasmModule.instance;
 
-            onFinishCb(memoryBlock.buffer);
-          });
+          onEnvReady(collisionDetectionInstance.exports.memory.buffer);
         });
-      });
+    //   fetch("collisionDetection.wasm")
+    //     .then(result => {
+    //       const binary = result.arrayBuffer();
+    //       binary.then(receivedData => {
+    //         const rawReceivedBytes = new Uint8Array(receivedData);
+    //         WebAssembly.instantiate(rawReceivedBytes, {
+    //           env: {
+    //             memory: memoryBlock,
+    //             env: {
+    //               log: console.log,
+    //             },
+    //           }
+    //         }).then(wasmModule => {
+    //           console.log(wasmModule);
+    //           collisionDetectionModule = wasmModule.module;
+    //           collisionDetectionInstance = wasmModule.instance;
+
+    //           onFinishCb(memoryBlock.buffer);
+    //         });
+    //       });
+    //   });
     }
   </script>
 <script id="test_code">
@@ -119,6 +139,7 @@ function start() {
         wsArray[i * 3 + 1] = y;
         wsArray[i * 3 + 2] = z;
       }
+      console.log('memoryBuffer', memoryBuffer);
     }
 
     function initRadii(array) {
@@ -147,7 +168,8 @@ function start() {
       clearArray(res1);
       clearArray(res2);
       const count1 = jsCollisionDetection(positions, radii, res1, num);
-      const count2 = wsCollisionDetection(positions, radii, res2, num);
+      const count2 = wsCollisionDetection(wsPositions, radii, res2, num);
+      console.log(count1, count2, res1, res2);
       return count1 === count2 && equalArray(res1, res2);
     }
 
@@ -168,12 +190,17 @@ function start() {
     //   Radii_Offset: 0 + Positions
     //   Result: 0 + Positions + Radii
     function wsCollisionDetection(positions, radii, res, n) {
-      return collisionDetectionInstance.exports._collisionDetection(0,
-              positionsBytes, positionsBytes + radiiBytes, n);
+      return collisionDetectionInstance.exports.collisionDetection(
+        0,
+        positionsBytes,
+        positionsBytes + radiiBytes,
+        n
+      );
     }
 
     initPositions(positions, wsPositions, num);
     initRadii(radii);
+    console.log(positions, wsPositions, num)
 
     // don't use Promise for the non Promise support browsers so far.
     setTimeout(function () {
@@ -187,7 +214,7 @@ function start() {
         jsPerformance.innerText = run(jsCollisionDetection, positions,
                 radii, res1, num, loop);
         setTimeout(function () {
-          wsPerformance.innerText = run(wsCollisionDetection, positions,
+          wsPerformance.innerText = run(wsCollisionDetection, wsPositions,
                   radii, res2, num, loop);
           comparison.innerText =
                   (Number(jsPerformance.innerText) /
